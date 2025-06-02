@@ -11,6 +11,7 @@ public class UserProfile
     public TimeSpan? TokenLifeSpanInSecond { get; set; } = null;
     public DateTime? TokenSetDateTime { get; set; } = null;
     public string Role { get; set; } = string.Empty;
+    public string UserType { get; set; } = string.Empty;
 
 }
 public class UserInstance: UserProfile

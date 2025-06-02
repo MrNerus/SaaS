@@ -24,15 +24,15 @@ public class LoginService(Env env, RedisService redis)
         using NpgsqlConnection configCon = new NpgsqlConnection(_env.ConfigConnectionString);
         await configCon.OpenAsync();
 
-        string encryptedConString = (await configCon.QueryFirstOrDefaultAsync<string>("select * from connectionInfo where connectionName = @connectionName", new { connectionName = loginDTO.ConnectionName })) ?? throw new Exception($"Tenant id: '{loginDTO.ConnectionName}' is not configured for SAAS model.");
+        UserInstance userInstance = await configCon.QueryFirstOrDefaultAsync<UserInstance>("select username, password, role from users where username = @username", new { username = loginDTO.UserName }) ?? throw new Exception($"'{loginDTO.UserName}' is not a registered user.");
+        string encryptedConString = (await configCon.QueryFirstOrDefaultAsync<string>("select connection_string from connection_info where connection_name = @connectionName and username = @username", new { connectionName = loginDTO.ConnectionName, username = loginDTO.UserName })) ?? throw new Exception($"User: '{loginDTO.UserName}' doesnot has access to Connection Name: '{loginDTO.ConnectionName}'.");
         ConnectionModel userConnectionModel = EncryptionHelper.Decrypt<ConnectionModel>(encryptedConString);
+        userInstance.UserType = "Tenant";
+        userInstance.ConnectionString = userConnectionModel.ConnectionString;
+        userInstance.ConnectionName = userConnectionModel.ConnectionName;
 
-        using NpgsqlConnection userCon = new NpgsqlConnection(userConnectionModel.ConnectionString);
-        await userCon.OpenAsync();
 
-        UserInstance userInstance = await userCon.QueryFirstOrDefaultAsync<UserInstance>("select username, password from users where username = @username", new { username = loginDTO.UserName }) ?? throw new Exception($"'{loginDTO.UserName}' is not a registered user.");
         bool isPasswordCorrect = EncryptionHelper.VerifyHash(loginDTO.Password, userInstance.Password);
-
         if (!isPasswordCorrect) throw new Exception("Username or password is incorrect.");
 
         GetToken(userInstance);
@@ -58,8 +58,9 @@ public class LoginService(Env env, RedisService redis)
         using NpgsqlConnection configCon = new NpgsqlConnection(_env.ConfigConnectionString);
         await configCon.OpenAsync();
 
-        UserInstance userInstance = await configCon.QueryFirstOrDefaultAsync<UserInstance>("select username, password, role, connection_name as ConnectionName from users where username = @username", new { username = loginDTO.UserName }) ?? throw new Exception($"'{loginDTO.UserName}' is not a registered user.");
+        UserInstance userInstance = await configCon.QueryFirstOrDefaultAsync<UserInstance>("select username, password, role from users where username = @username", new { username = loginDTO.UserName }) ?? throw new Exception($"'{loginDTO.UserName}' is not a registered user.");
         bool isPasswordCorrect = EncryptionHelper.VerifyHash(loginDTO.Password, userInstance.Password);
+        userInstance.UserType = "Console";
 
         if (!isPasswordCorrect) throw new Exception("Username or password is incorrect.");
 
@@ -95,9 +96,10 @@ public class LoginService(Env env, RedisService redis)
                 new Claim("username", userInstance.Username),
                 new Claim("connectionName", userInstance.ConnectionName),
                 new Claim("loginId", userInstance.LoginId),
-                new Claim(ClaimTypes.Role, userInstance.Role)
+                new Claim(ClaimTypes.Role, userInstance.Role),
+                new Claim("userType", userInstance.UserType)
             }),
-            Expires = DateTime.UtcNow.AddHours(12),
+            Expires = DateTime.UtcNow.AddDays(7),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 

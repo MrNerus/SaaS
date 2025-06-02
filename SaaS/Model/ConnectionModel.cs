@@ -7,6 +7,7 @@ namespace SaaS.Model;
 
 public class ConnectionModel
 {
+    public int ServerId { get; set; } = -1;
     public string Server { get; set; } = string.Empty;
     public string Port { get; set; } = string.Empty;
     public string Database { get; set; } = string.Empty;

@@ -34,7 +34,7 @@ public static class LoginDTOExtensions
 {
     public static bool hasValidData(this LoginDTO dto)
     {
-        if (string.IsNullOrEmpty(dto.UserName) || string.IsNullOrEmpty(dto.Password) || string.IsNullOrEmpty(dto.ConnectionName))
+        if (string.IsNullOrEmpty(dto.UserName) || string.IsNullOrEmpty(dto.Password))
         {
             return false;
         }

@@ -11,7 +11,7 @@ namespace SaaS.Service;
 public class ServerAdminService(Env env)
 {
     private readonly Env _env = env;
-    public async Task RegisterTenant(ConnectionModel connectionModel)
+    public async Task RegisterTenant(ConnectionModel connectionModel, UserInstance userInstance)
     {
         using NpgsqlConnection configCon = new NpgsqlConnection(_env.ConfigConnectionString);
         await configCon.OpenAsync();
@@ -33,7 +33,7 @@ public class ServerAdminService(Env env)
 
         try
         {
-            int rowsAffected = await configCon.ExecuteAsync("insert into connectionInfo (connectionName) values (@connectionName)", new { connectionName = connectionModel.ConnectionName, connectionString = encryptedConnectionModel }, transaction: configTran);
+            int rowsAffected = await configCon.ExecuteAsync("insert into connection_info (connection_name, connection_string, username, server_id) values (@connectionName, @connectionString, @username, @serverId)", new { connectionName = connectionModel.ConnectionName, connectionString = encryptedConnectionModel, username = userInstance.Username, serverId = tenantServer.ServerId }, transaction: configTran);
         }
         catch (PostgresException ex) when (ex.SqlState == PGExceptionState.UniqueViolation.StateCode())
         {
@@ -78,6 +78,8 @@ public class ServerAdminService(Env env)
         if (string.IsNullOrEmpty(connectionModel.Password)) connectionModel.Password = CryptoHelper.GeneratePassword(12);
 
         connectionModel.Database = connectionModel.Provider.BaseDbName();
+        connectionModel.ConfigConnection = _env.ConfigConnectionModel;
+
         string encryptedConnectionModel = EncryptionHelper.Encrypt(connectionModel);
 
         if (!serverRegistrationDTO.AlreadyExists)
@@ -141,7 +143,7 @@ public class ServerAdminService(Env env)
 
         try
         {
-            int rowsAffected = await configCon.ExecuteAsync("insert into users (username, password, role, connection_name) values (@username, @password, @role, @connection_name)", new { username = loginDTO.UserName, password = EncryptionHelper.Hash(loginDTO.Password), role = loginDTO.Role, connection_name = loginDTO.ConnectionName }, transaction: configTran);
+            int rowsAffected = await configCon.ExecuteAsync("insert into users (username, password, role) values (@username, @password, @role)", new { username = loginDTO.UserName, password = EncryptionHelper.Hash(loginDTO.Password), role = loginDTO.Role }, transaction: configTran);
         }
         catch (PostgresException ex) when (ex.SqlState == PGExceptionState.UniqueViolation.StateCode())
         {
@@ -154,9 +156,9 @@ public class ServerAdminService(Env env)
     public async Task<ConnectionModel> GetTenantServer(NpgsqlConnection configCon, NpgsqlTransaction configTran)
     {
         // TODO: Fine tune which connectionstring to get once multiple tenant server is available.
-        string encryptedConString = (await configCon.QueryFirstOrDefaultAsync<string>("select connection_string from tenant_server fetch next 1 rows only")) ?? throw new Exception($"No tenant server is available at the moment.");
-        ConnectionModel connectionModel = EncryptionHelper.Decrypt<ConnectionModel>(encryptedConString);
-
+        dynamic tenantServer = (await configCon.QueryFirstOrDefaultAsync<dynamic>("select server_id, connection_string from tenant_server fetch next 1 rows only")) ?? throw new Exception($"No tenant server is available at the moment.");
+        ConnectionModel connectionModel = EncryptionHelper.Decrypt<ConnectionModel>(tenantServer?.connection_string ?? throw new Exception("Configuration mismatched on tenant server."));
+        connectionModel.ServerId = tenantServer.server_id;
         return connectionModel;
     }
 }

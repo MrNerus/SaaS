@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SaaS.DTO;
@@ -8,17 +9,23 @@ namespace SaaS.Controller
 {
 
     [ApiController]
-    [Route("api/serveradmin")]
+    [Route("api")]
     public class ServerAdminController(ServerAdminService serverAdminService) : ControllerBase
     {
         public readonly ServerAdminService _serverAdminService = serverAdminService;
 
         [HttpPost("registerTenant")]
+        [Authorize]
         public async Task<IActionResult> RegisterTenant(ConnectionModel connectionModel)
         {
             try
             {
-                await _serverAdminService.RegisterTenant(connectionModel); ;
+                UserInstance userInstance = HttpContext.Items["UserInstance"] as UserInstance ?? throw new Exception("Your session has been expired. Please login again.");
+                if (userInstance.UserType != "Console") throw new Exception("You are not authorized to register tenant");
+
+                connectionModel.ConnectionName = connectionModel.ConnectionName.ToLower();
+
+                await _serverAdminService.RegisterTenant(connectionModel, userInstance); ;
                 return Ok("Ok.");
             }
             catch (Exception ex)

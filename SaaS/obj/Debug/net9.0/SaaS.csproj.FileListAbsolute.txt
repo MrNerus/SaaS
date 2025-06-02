@@ -46,3 +46,4 @@ d:\AspNetCore\SaaS\SaaS\obj\Debug\net9.0\ref\SaaS.dll
 d:\AspNetCore\SaaS\SaaS\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
 d:\AspNetCore\SaaS\SaaS\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 d:\AspNetCore\SaaS\SaaS\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+d:\AspNetCore\SaaS\SaaS\obj\Debug\net9.0\SaaS.sourcelink.json

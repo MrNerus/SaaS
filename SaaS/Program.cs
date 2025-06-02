@@ -20,6 +20,7 @@ builder.Services.AddSingleton(env);
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddTransient<LoginService>();
 builder.Services.AddTransient<ServerAdminService>();
+builder.Services.AddTransient<DashboardService>();
 
 
 builder.Services.AddAuthentication(options =>
