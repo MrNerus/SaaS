@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "LRSk5TxjZj4vXSz4UtPHNOnaxxCZgNhlekUUdF9DKVs=",
+  "Source": "SaaS",
+  "BasePath": "_content/SaaS",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

@@ -1,0 +1,13 @@
+getting started with redis:
+  - setup docker
+  - setup redis:
+    - docker pull redis
+  - start redis:
+    - docker run --name my-redis -p 6379:6379 -d redis
+
+
+closing redis:
+  - close only:
+    - docker stop my-redis
+  - remove entirely:
+    - docker rm my-redis
